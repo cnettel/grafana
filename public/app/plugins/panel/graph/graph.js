@@ -243,7 +243,9 @@ function (angular, $, moment, _, kbn, GraphTooltip) {
           panel.doscatter = !(_.isUndefined(panel.xaxis.scatter) || !panel.xaxis.scatter || !data.length);
           addXAxis(options, panel.doscatter);
           addGridThresholds(options, panel);
-          addAnnotations(options);
+          if (!panel.doscatter) {
+            addAnnotations(options);
+          }
           configureAxisOptions(data, options);
 
           if (panel.doscatter) {
