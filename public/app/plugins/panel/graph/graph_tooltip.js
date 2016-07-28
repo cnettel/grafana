@@ -25,12 +25,26 @@ function ($) {
 
     this.findHoverIndexFromData = function(posX, series) {
       var len = series.data.length;
-      for (var j = 0; j < len; j++) {
-        if (series.data[j][0] > posX) {
-          return Math.max(j - 1,  0);
+      var j;
+      if (panel.doscatter) {
+        var bestDist = Infinity;
+        var bestIndex = 0;
+        for (j = 0; j < len; j++) {
+          var dist = Math.abs(series.data[j][0] - posX);
+          if (dist - bestDist < 0) {
+            bestDist = dist;
+            bestIndex = j;
+          }
         }
+        return bestIndex;
+      } else {
+        for (j = 0; j < len; j++) {
+          if (series.data[j][0] > posX) {
+            return Math.max(j - 1, 0);
+          }
+        }
+        return j - 1;
       }
-      return j - 1;
     };
 
     this.showTooltip = function(absoluteTime, innerHtml, pos) {
@@ -131,7 +145,11 @@ function ($) {
 
         seriesHtml = '';
 
-        absoluteTime = dashboard.formatDate(seriesHoverInfo.time, tooltipFormat);
+        if (panel.doscatter) {
+          absoluteTime = seriesList[0].formatValue(seriesHoverInfo.time);
+        } else {
+          absoluteTime = dashboard.formatDate(seriesHoverInfo.time, tooltipFormat);
+        }
 
         // Dynamically reorder the hovercard for the current time point if the
         // option is enabled.
@@ -184,7 +202,11 @@ function ($) {
 
         value = series.formatValue(value);
 
-        absoluteTime = dashboard.formatDate(item.datapoint[0], tooltipFormat);
+        if (panel.doscatter) {
+          absoluteTime = seriesList[0].formatValue(item.datapoint[0]);
+        } else {
+          absoluteTime = dashboard.formatDate(item.datapoint[0], tooltipFormat);
+        }
 
         group += '<div class="graph-tooltip-value">' + value + '</div>';
 

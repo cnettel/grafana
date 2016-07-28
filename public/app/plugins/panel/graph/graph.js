@@ -240,11 +240,26 @@ function (angular, $, moment, _, kbn, GraphTooltip) {
           if (data.length && data[0].stats.timeStep) {
             options.series.bars.barWidth = data[0].stats.timeStep / 1.5;
           }
-
-          addTimeAxis(options);
+          panel.doscatter = !(_.isUndefined(panel.xaxis.scatter) || !panel.xaxis.scatter || !data.length);
+          addXAxis(options, panel.doscatter);
           addGridThresholds(options, panel);
           addAnnotations(options);
           configureAxisOptions(data, options);
+
+          if (panel.doscatter) {
+            var first = data[0];
+            for (var k = 1; k < data.length; k++) {
+              var subseries = data[k];
+              if (subseries.data.length) {
+                for (var j = 0; j < first.data.length; j++) {
+                  subseries.data[j][0] = first.data[j][1];
+                }
+              }
+            }
+
+            first.data = [];
+            first.stack = false;
+          }
 
           sortedSeries = _.sortBy(data, function(series) { return series.zindex; });
 
@@ -288,21 +303,36 @@ function (angular, $, moment, _, kbn, GraphTooltip) {
           }
         }
 
-        function addTimeAxis(options) {
+        function addXAxis(options, doscatter) {
           var ticks = panelWidth / 100;
-          var min = _.isUndefined(ctrl.range.from) ? null : ctrl.range.from.valueOf();
-          var max = _.isUndefined(ctrl.range.to) ? null : ctrl.range.to.valueOf();
+
+          var min = null;
+          var max = null;
+
+          if (doscatter) {
+            min = data[0].stats.min;
+            max = data[0].stats.max;
+          } else {
+            min = _.isUndefined(ctrl.range.from) ? null : ctrl.range.from.valueOf();
+            max = _.isUndefined(ctrl.range.to) ? null : ctrl.range.to.valueOf();
+          }
 
           options.xaxis = {
-            timezone: dashboard.getTimezone(),
             show: panel.xaxis.show,
-            mode: "time",
             min: min,
             max: max,
-            label: "Datetime",
             ticks: ticks,
-            timeformat: time_format(ticks, min, max),
           };
+          if (doscatter) {
+            options.xaxis.label = data[0].alias;
+          } else {
+            _.extend(options.xaxis, {
+              timezone: dashboard.getTimezone(),
+              mode: "time",
+              label: "Datetime",
+              timeformat: time_format(ticks, min, max)
+            });
+          }
         }
 
         function addGridThresholds(options, panel) {
@@ -461,11 +491,13 @@ function (angular, $, moment, _, kbn, GraphTooltip) {
         });
 
         elem.bind("plotselected", function (event, ranges) {
-          scope.$apply(function() {
-            timeSrv.setTime({
-              from  : moment.utc(ranges.xaxis.from),
-              to    : moment.utc(ranges.xaxis.to),
-            });
+          scope.$apply(function () {
+            if (!panel.doscatter) {
+              timeSrv.setTime({
+                from: moment.utc(ranges.xaxis.from),
+                to: moment.utc(ranges.xaxis.to),
+              });
+            }
           });
         });
       }

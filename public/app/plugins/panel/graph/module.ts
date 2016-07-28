@@ -24,6 +24,7 @@ class GraphCtrl extends MetricsPanelCtrl {
   datapointsCount: number;
   datapointsOutside: boolean;
   datapointsWarning: boolean;
+  doscatter: boolean;
   colors: any = [];
 
   panelDefaults = {
@@ -50,7 +51,8 @@ class GraphCtrl extends MetricsPanelCtrl {
       }
     ],
     xaxis: {
-      show: true
+      show: true,
+      scatter: false
     },
     grid          : {
       threshold1: null,
